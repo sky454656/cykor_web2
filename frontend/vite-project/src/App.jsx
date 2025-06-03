@@ -1,4 +1,5 @@
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
+import axios from "axios";
 
 function Home(props){
   return   <div><a href="/" onClick={(event)=>{
@@ -47,7 +48,7 @@ function Print_title(props){
         {props.topics.map(t => (
           <li><a href ="/" onClick = {(event)=>{
             event.preventDefault();
-            props.onSelect(t.id);
+            props.onSelect(t._id);
           }}>{t.title}</a></li>
         ))}
       </ol>
@@ -82,17 +83,24 @@ function Edit(props){
 
 function App() {
   const [mode, setMode] = useState('HOME');
-  const [topics, setTopics] = useState([
-    {id:1, title:'html', body:'html is ...'},
-    {id:2, title:'css', body:'css is ...'},
-    {id:3, title:'javascript', body:'javascript is ...'}
-  ]);
-  const [nextId, setNextId] = useState(4);
-
-  const [id, setId] = useState(null);
+  const [topics, setTopics] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
+  const [logIn, setLogIn] = useState(false);
+  const [user, setUser] = useState(null);
 
-  const selectedTopic = topics.find(t => t.id === selectedId);
+
+  const selectedTopic = topics.find(t => t._id === selectedId);
+
+  useEffect(() => {
+    axios.get('http://localhost:5001/api/posts')
+      .then((res) => setTopics(res.data))
+      .catch((err) => console.error('fail', err));
+  }, []);
+
+
+  
+
+
 
   let content = null;
   let contextControl = null;
@@ -100,15 +108,15 @@ function App() {
   if (mode === 'HOME')
     content = <Article title="home" body="tmp home"></Article>
   else if(mode === 'LIST'){
-    content = <Print_title topics={topics} onSelect={(id) => {
-      setSelectedId(id);
+    content = <Print_title topics={topics} onSelect={(_id) => {
+      setSelectedId(_id);
       setMode('READ')
     }}></Print_title>;
   } else if (mode === 'READ'){
     if (selectedTopic) {
       content = <>
-      <Print_title topics={topics} onSelect={(id) => {
-        setSelectedId(id);
+      <Print_title topics={topics} onSelect={(_id) => {
+        setSelectedId(_id);
         }}></Print_title>
        <Article title={selectedTopic.title} body={selectedTopic.body}></Article>
       </>
@@ -118,51 +126,47 @@ function App() {
         setMode('EDIT');
       }}>edit</a></p>
       <p><input type ="button" value = "Delete" onClick={()=>{
-        const newTopics = []
-         for(let i=0; i<topics.length; i++){
-          if(topics[i].id !== selectedId){
-            newTopics.push(topics[i]);
-          }
-        }
-        setTopics(newTopics);
-        setMode('HOME');
-      }}></input>
-      </p>
+         axios.delete(`http://localhost:5001/api/posts/${selectedId}`)
+            .then(() => {
+              setTopics(topics.filter(t => t._id !== selectedId));
+              setMode('HOME');
+            })
+            .catch((err) => console.error('삭제 실패:', err));
+      }}></input></p>
       </>
       } else {
       content = <Article title="Not Found" body="해당 글이 없습니다."></Article>;
     }
   } else if (mode === 'CREATE'){
-      content = <Create onCreate={(_title, _body)=>{
-        const newTopic = {id:nextId, title:_title, body:_body}
-        const newTopics = [...topics]
-        newTopics.push(newTopic);
-        setTopics(newTopics);
+      content = <Create onCreate={(title, body)=>{
+        axios.post('http://localhost:5001/api/posts', {
+        title,
+        body,
+        author: 'tmp'
+      }).then(res => {
+        setTopics(prev => [...prev, res.data]);
         setMode('HOME');
-        setId(nextId);
-        setNextId(nextId+1);
+        setSelectedId(res.data._id);
+      }).catch(err => console.error('생성 실패:', err));
     }}></Create>
   } else if (mode === 'EDIT'){
-    let title, body = null;
-    const topic = topics.find(t => t.id === selectedId)
-    title = topic.title;
-    body = topic.body;
-
-    content = <Edit title = {title} body = {body} onUpdate={(title, body)=>{
-      const newTopics = [...topics];
-      const editTopics = {id: selectedId, title:title, body:body}
-      for(let i=0; i<newTopics.length; i++){
-        if(newTopics[i].id === selectedId){
-          newTopics[i] = editTopics;
-          break;
-        }
-      }
-      setTopics(newTopics);
-      setMode('LIST');
+    if (!selectedTopic)
+      return null;
+    content = <Edit title = {selectedTopic.title} body = {selectedTopic.body} onUpdate={(title, body)=>{
+      axios.put(`http://localhost:5001/api/posts/${selectedId}`, { title, body })
+      .then((res) => {
+        const updated = res.data;
+        const newTopics = topics.map(t =>{
+          if (t._id === selectedId)
+            return updated;
+          else
+            return t;
+        });
+        setTopics(newTopics);
+        setMode('LIST');
+      }).catch(err => console.error('수정 실패:', err));
     }}></Edit>
   }
-
-
 
 
 

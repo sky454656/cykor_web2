@@ -5,7 +5,7 @@ const listSchema = new mongoose.Schema({
     type: String,
     required : true,
   },
-  content: {
+  body: {
     type: String,
     required: true,
   },
@@ -13,10 +13,13 @@ const listSchema = new mongoose.Schema({
     type: String,
     required : false,
     default : "tmp",
+  }
   },
-  timestamps : true
-});
+  {
+    timestamps : true
+  }
+  );
 
-const List = mongoose.model('List', listSchema);
+const Post = mongoose.model('Post', listSchema);
 
-module.exports = List;
+module.exports = Post;
