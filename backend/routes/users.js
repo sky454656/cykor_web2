@@ -3,19 +3,25 @@ const router = express.Router();
 const User = require('../models/User');
 
 router.post('/register', async (req, res) => {
-    try{
-        console.log('받은 데이터:', req.body);
-        const newUser = new User(req.body);
-        await newUser.save();
-        res.status(201).json({message : 'register success'});
+  try{
+    const {username} = req.body;
+
+    const existing = await User.findOne({username});
+    if (existing)
+      return res.status(409).json({message: 'Username already exists.'});
+
+      const newUser = new User(req.body);
+      await newUser.save();
+      res.status(201).json({message : 'register success'});
     }catch (err){
-        res.status(400).json({ message: 'register failure', error: err });
+      res.status(400).json({ message: 'register failure', error: err });
     }
 });
 
 
 router.post('/login', async (req, res) => {
   try {
+
     const { username, password } = req.body;
     const user = await User.findOne({ username });
     if (!user || user.password !== password) {

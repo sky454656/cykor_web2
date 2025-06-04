@@ -16,7 +16,7 @@ function Create(props){
       event.preventDefault();
       const title = event.target.title.value;
       const body = event.target.body.value;
-      props.OnCreate();
+      props.onCreate(title, body);
     }}>
       <p><input type ="text" name="title" placeholder="title"></input></p>
       <p><textarea name="body" placeholder="body"></textarea></p>
@@ -207,29 +207,34 @@ function App() {
         password
       }).then(res => {
         setMode('HOME');
-      }).catch(err => console.error('생성 실패:', err));
+      }).catch(err => {
+        if (err.response && err.response.status == 409)
+          alert('Username already exists. ');
+        else {
+          console.error('register error', err);
+          alert('register error');
+        }
+      });
     }}></Register>
   } else if (mode === 'LOGIN'){
     content = <Login onLogin={(username, password)=>{
         axios.post('http://localhost:5001/api/users/login', {
         username,
         password
-      }).then(res => {
-        if (res.data.message === 'login success'){
-          setLogIn(true);
-          setMode('HOME');
-          setUser(res.data.user);
+      }).then(res => { 
+        setLogIn(true);
+         setMode('HOME');
+         setUser(res.data.user);
+      }).catch(err => {
+        if (err.response && err.response.status === 401)
+          alert('login failure');
+        else {
+          console.error('login error', err);
+          alert('login error');
         }
-        else alert("login failure");
-      }).catch(err => console.error('생성 실패:', err));
+      })
     }}></Login>
-  }else {
-
-
   }
-
-
-
 
 
   if(!logIn){
@@ -249,7 +254,6 @@ function App() {
             event.preventDefault();
             setMode('LOGIN');
           }}>login</a>
-         
         </div>
         {content}
       </div>
@@ -269,6 +273,13 @@ function App() {
       <List onChangeMode={()=>{
         setMode('LIST');
       }}></List>
+       <div>
+          <a href = "/" onClick = {(event)=>{
+            event.prevenetDefault();
+            setMode('HOME');
+            setLogIn(false);
+          }}>logout</a>
+        </div>
       {content}
       {contextControl}
     </div>
