@@ -5,7 +5,7 @@ function Home(props){
   return   <div><a href="/" onClick={(event)=>{
       event.preventDefault();
       props.onChangeMode();
-    }}>{props.title}</a>
+    }}>Home</a>
     </div>
 }
 
@@ -112,14 +112,6 @@ function Login(props){
       </article>
 }
 
-function Logout(props){
-
-
-
-
-}
-
-
 function App() {
   const [mode, setMode] = useState('HOME');
   const [topics, setTopics] = useState([]);
@@ -139,44 +131,51 @@ function App() {
   let content = null;
   let contextControl = null;
 
-  if (mode === 'HOME')
-    content = <Article title="home" body="tmp home"></Article>
+  if (mode === 'HOME'){
+    if (user && logIn)
+      content = <Article title = "Home" body = {`You are logged in as ${user}`}></Article>
+    else
+      content = <Article title = "Home" body = "Welcome"></Article>
+  }
   else if(mode === 'LIST'){
     content = <Print_title topics={topics} onSelect={(_id) => {
       setSelectedId(_id);
       setMode('READ')
     }}></Print_title>;
-  } else if (mode === 'READ'){
-    if (selectedTopic) {
-      content = <>
-      <Print_title topics={topics} onSelect={(_id) => {
-        setSelectedId(_id);
-        }}></Print_title>
-       <Article title={selectedTopic.title} body={selectedTopic.body}></Article>
-      </>
-      contextControl = <>
-      <p><a href ={'edit'+selectedId} onClick={(event)=>{
-        event.preventDefault();
-        setMode('EDIT');
-      }}>edit</a></p>
-      <p><input type ="button" value = "Delete" onClick={()=>{
-         axios.delete(`http://localhost:5001/api/posts/${selectedId}`)
+    } else if (mode === 'READ'){
+      if (selectedTopic) {
+        content = <>
+        <Print_title topics={topics} onSelect={(_id) => {
+          setSelectedId(_id);
+          }}></Print_title>
+        <Article title={selectedTopic.title} body={selectedTopic.body}></Article>
+        <p>Created by {selectedTopic.author}</p>
+        </>
+        if (selectedTopic.author === user){
+          contextControl = <>
+          <p><a href ={'edit'+ selectedId} onClick={(event)=>{
+            event.preventDefault();
+            setMode('EDIT');
+          }}>edit</a></p>
+          <p><input type ="button" value = "Delete" onClick={()=>{
+            axios.delete(`http://localhost:5001/api/posts/${selectedId}`)
             .then(() => {
               setTopics(topics.filter(t => t._id !== selectedId));
               setMode('HOME');
             })
             .catch((err) => console.error('삭제 실패:', err));
-      }}></input></p>
-      </>
-      } else {
-      content = <Article title="Not Found" body="해당 글이 없습니다."></Article>;
-    }
+            }}></input></p>
+            </>
+        }
+        } else {
+        content = <Article title="Not Found" body="해당 글이 없습니다."></Article>;
+      }
   } else if (mode === 'CREATE'){
       content = <Create onCreate={(title, body)=>{
         axios.post('http://localhost:5001/api/posts', {
         title,
         body,
-        author: 'tmp'
+        author : user
       }).then(res => {
         setTopics(prev => [...prev, res.data]);
         setMode('HOME');
@@ -221,10 +220,10 @@ function App() {
         axios.post('http://localhost:5001/api/users/login', {
         username,
         password
-      }).then(res => { 
+      }).then(res => {
         setLogIn(true);
-         setMode('HOME');
-         setUser(res.data.user);
+        setMode('HOME');
+        setUser(res.data.username);
       }).catch(err => {
         if (err.response && err.response.status === 401)
           alert('login failure');
@@ -240,17 +239,17 @@ function App() {
   if(!logIn){
     return (
       <div>
-        <Home title="home" author="tmp" onChangeMode={()=>{
+        <Home onChangeMode={()=>{
           setMode('HOME');
         }}></Home>
         <div>
-          <a href = "/register" onClick={(event)=>{
+          <a href = "/" onClick={(event)=>{
           event.preventDefault();
           setMode('REGISTER');
         }}>register</a>
         </div>
         <div>
-          <a href = "/login" onClick={(event)=>{
+          <a href = "/" onClick={(event)=>{
             event.preventDefault();
             setMode('LOGIN');
           }}>login</a>
@@ -261,11 +260,11 @@ function App() {
   }else {
   return (
     <div>
-      <Home title="home" author="tmp" onChangeMode={()=>{
+      <Home onChangeMode={()=>{
         setMode('HOME');
       }}></Home>
       <div>
-        <a href = "/create" onClick={(event)=>{
+        <a href = "/" onClick={(event)=>{
           event.preventDefault();
           setMode('CREATE');
         }}>Create</a>

@@ -11,8 +11,7 @@ const listSchema = new mongoose.Schema({
   },
   author: {
     type: String,
-    required : false,
-    default : "tmp",
+    required : true,
   }
   },
   {
