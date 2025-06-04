@@ -16,7 +16,7 @@ function Create(props){
       event.preventDefault();
       const title = event.target.title.value;
       const body = event.target.body.value;
-      props.onCreate(title, body);
+      props.OnCreate();
     }}>
       <p><input type ="text" name="title" placeholder="title"></input></p>
       <p><textarea name="body" placeholder="body"></textarea></p>
@@ -80,14 +80,53 @@ function Edit(props){
   </article>
 }
 
+function Register(props){
+  return <article>
+    <h2>Register</h2>
+    <form onSubmit={(event)=>{
+      event.preventDefault();
+      const username = event.target.username.value;
+      const password = event.target.password.value;
+      props.onRegister(username, password);
+    }}>
+      <p><input type ="text" name="username" placeholder="username"></input></p>
+      <p><input type="password" name="password" placeholder="password"></input></p>
+      <p><input type="submit" value="register"></input></p>
+    </form>
+      </article>
+}
+
+function Login(props){
+  return <article>
+    <h2>Login</h2>
+    <form onSubmit={(event)=>{
+      event.preventDefault();
+      const username = event.target.username.value;
+      const password = event.target.password.value;
+      props.onLogin(username, password);
+    }}>
+      <p><input type ="text" name="username" placeholder="username"></input></p>
+      <p><input type="password" name="password" placeholder="password"></input></p>
+      <p><input type="submit" value="Login"></input></p>
+    </form>
+      </article>
+}
+
+function Logout(props){
+
+
+
+
+}
+
 
 function App() {
   const [mode, setMode] = useState('HOME');
   const [topics, setTopics] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
+
   const [logIn, setLogIn] = useState(false);
   const [user, setUser] = useState(null);
-
 
   const selectedTopic = topics.find(t => t._id === selectedId);
 
@@ -96,11 +135,6 @@ function App() {
       .then((res) => setTopics(res.data))
       .catch((err) => console.error('fail', err));
   }, []);
-
-
-  
-
-
 
   let content = null;
   let contextControl = null;
@@ -166,10 +200,61 @@ function App() {
         setMode('LIST');
       }).catch(err => console.error('수정 실패:', err));
     }}></Edit>
+  } else if (mode === 'REGISTER'){
+    content = <Register onRegister={(username, password)=>{
+        axios.post('http://localhost:5001/api/users/register', {
+        username,
+        password
+      }).then(res => {
+        setMode('HOME');
+      }).catch(err => console.error('생성 실패:', err));
+    }}></Register>
+  } else if (mode === 'LOGIN'){
+    content = <Login onLogin={(username, password)=>{
+        axios.post('http://localhost:5001/api/users/login', {
+        username,
+        password
+      }).then(res => {
+        if (res.data.message === 'login success'){
+          setLogIn(true);
+          setMode('HOME');
+          setUser(res.data.user);
+        }
+        else alert("login failure");
+      }).catch(err => console.error('생성 실패:', err));
+    }}></Login>
+  }else {
+
+
   }
 
 
 
+
+
+  if(!logIn){
+    return (
+      <div>
+        <Home title="home" author="tmp" onChangeMode={()=>{
+          setMode('HOME');
+        }}></Home>
+        <div>
+          <a href = "/register" onClick={(event)=>{
+          event.preventDefault();
+          setMode('REGISTER');
+        }}>register</a>
+        </div>
+        <div>
+          <a href = "/login" onClick={(event)=>{
+            event.preventDefault();
+            setMode('LOGIN');
+          }}>login</a>
+         
+        </div>
+        {content}
+      </div>
+    );
+  }else {
   return (
     <div>
       <Home title="home" author="tmp" onChangeMode={()=>{
@@ -187,7 +272,10 @@ function App() {
       {content}
       {contextControl}
     </div>
-)};
+  );
+}
+  return <div>초기화 오류: 모드를 찾을 수 없습니다. 현재 mode = {mode}</div>;
+}
 
 
 export default App;
